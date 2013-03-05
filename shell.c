@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h> // needed for O_EXCL, O_CREAT, open (?)
 
 #include "stringlist.h"
 
@@ -74,6 +75,18 @@ int file_exists(const char* path) {
   return 0;
 }
 
+char *drop_until_last_slash(char *path) {
+  int k;
+  int slash_index = -1;
+  for(k = 0; path[k] != '\0'; k++) {
+    if(path[k] == '/')
+      slash_index = k;
+  }
+  return slash_index == -1 || slash_index + 1 == k
+    ? path
+    : &path[slash_index + 1];
+}
+
 char* find_path(char* program){
   static const char *mypaths[] = {
     "./",
@@ -91,7 +104,7 @@ char* find_path(char* program){
   }
   char **i=mypaths;
   while(*i){
-    char path[PATH_BUFFER_SIZE]="";
+    char path[PATH_BUFFER_SIZE]; // = "";
     strncat(path,*i,PATH_BUFFER_SIZE-1);
     strncat(path,program,PATH_BUFFER_SIZE-strlen(path)-1);
     if(file_exists(path)) return path;
@@ -108,7 +121,7 @@ int main(int argc, char **argv) {
 
   while(1) {
     /* Wait for input */
-    printf("%s%s", argv[0], prompt);
+    printf("%s%s", drop_until_last_slash(argv[0]), prompt);
     fgets(command, COMMAND_SIZE, stdin);
     
     stringlist * args;
