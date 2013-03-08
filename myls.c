@@ -3,13 +3,11 @@
 #include <unistd.h>
 
 int main(int argc, char **argv) {
-  const int FN_MAX = 256;
   const int DIR_MAX = 256;
 
   struct dirent *de;
   DIR *d;
   char *check_dir;
-  char filename[FN_MAX];
   char current_dir[DIR_MAX];
 
   // We will only use the first command-line arg,

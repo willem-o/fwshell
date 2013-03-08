@@ -1,7 +1,7 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "stringlist.h"
-
 
 struct stringlist {
   struct stringlist* next;
@@ -31,15 +31,16 @@ stringlist* slst_create(char* str){
 
 /* will not free() strings inside.*/
 void slst_free(struct stringlist* slst){
+  if(!slst) return;
   while(slst_tail(slst)){
-    slst_pop_head(slst);
+    slst_pop_head(&slst);
   }
   free(slst);
 }
 
-void slst_pop_head(stringlist* slst){
-  stringlist* tmp=slst;
-  slst=slst->next;
+void slst_pop_head(stringlist** slst){
+  stringlist* tmp=*slst;
+  *slst=slst_tail(*slst);
   free(tmp);
 }
 
@@ -49,4 +50,24 @@ stringlist* slst_tail(struct stringlist* slst){
 
 const char* slst_head(struct stringlist* slst){
   return slst->data;
+}
+
+int slst_size(stringlist* slst) {
+  int size = 0;
+  while(slst) {
+    size++;
+    slst = slst_tail(slst);
+  }
+  return size;
+}
+
+char** slst_to_charpp(stringlist* slst) {
+  char** charpp = malloc((slst_size(slst) + 1) * sizeof(char*));
+  int i = 0;
+  while(slst) {
+    charpp[i++] = strdup(slst->data);
+    slst = slst_tail(slst);
+  }
+  charpp[i] = NULL;
+  return charpp;
 }

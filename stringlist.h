@@ -14,9 +14,12 @@ stringlist* slst_create(char* str);
 
 
 void slst_free(stringlist*);
-void slst_pop_head(stringlist*);
+void slst_pop_head(stringlist**);
 
 stringlist* slst_tail(stringlist*);
 const char* slst_head(stringlist*);
+
+int slst_size(stringlist*);
+char** slst_to_charpp(stringlist*);
 
 #endif

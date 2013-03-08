@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h> // needed for O_EXCL, O_CREAT, open (?)
+#include <sys/wait.h>
+#include <sys/stat.h>
 
 #include "stringlist.h"
 
@@ -33,7 +35,7 @@ int parse_command(char *command, stringlist** result) {
   for(i = 0; command[i] != '\0'; i++) {
     if(command[i] == '"'){
       if(inside_quote){
-	if(command[++i]!=' '){
+	if(isspace(command[++i])){
 	  return PARSE_MISSING_SPACE;
 	} else {
 	  inside_quote=0;
@@ -61,18 +63,29 @@ int parse_command(char *command, stringlist** result) {
       }
     } 
   }
-  slst_pop_head(*result);
+  slst_pop_head(result);
   if(inside_quote) return PARSE_UNMATCHED_QUOTE;
   return PARSE_OK;
 }
 
-int file_exists(const char* path) {
-  if(open(path,O_EXCL | O_CREAT) == -1) {
-    return errno == EEXIST;
+int executable_exists(const char* path) {
+  struct stat s;
+  if(stat(path,&s)!=0){
+    return 0;
   } else {
-    remove(path);
+    return (s.st_mode & S_IXOTH) // executable for other
+       || (s.st_mode & S_IXGRP && s.st_gid==getegid())
+       || (s.st_mode & S_IXUSR && s.st_uid==geteuid());
   }
-  return 0;
+
+  /* if(open(path,O_EXCL | O_C */
+  /*   printf("%d: path: %s\n", errno, path); */
+  /*   return errno == EEXIST; */
+  /* } else { */
+  /*   remove(path); */
+  /* } */
+  /* printf("doesn't exist: path: %s\n", path); */
+  /* return 0; */
 }
 
 char *drop_until_last_slash(char *path) {
@@ -87,11 +100,11 @@ char *drop_until_last_slash(char *path) {
     : &path[slash_index + 1];
 }
 
-char* find_path(char* program){
+const char* find_path(const char* program){
   static const char *mypaths[] = {
-    "./",
-    "/usr/bin/",
     "/bin/",
+    "/usr/bin/",
+    "./",
     NULL
   };
   static const int PATH_BUFFER_SIZE=128;
@@ -99,15 +112,17 @@ char* find_path(char* program){
   if(program == NULL)
     return NULL;
   else if(program[0] == '/') {
-    if(file_exists(program)) return program;
+    if(executable_exists(program)) return program;
     else return NULL;
   }
-  char **i=mypaths;
+  const char **i=mypaths;
   while(*i){
     char path[PATH_BUFFER_SIZE]; // = "";
+    path[0] = '\0'; 
     strncat(path,*i,PATH_BUFFER_SIZE-1);
     strncat(path,program,PATH_BUFFER_SIZE-strlen(path)-1);
-    if(file_exists(path)) return path;
+    if(executable_exists(path)) return strdup(path);
+    i++;    
   }
   return NULL;
 }
@@ -117,7 +132,6 @@ int main(int argc, char **argv) {
   const int COMMAND_SIZE = 1024;
 
   char command[COMMAND_SIZE];
-  int flag;
 
   while(1) {
     /* Wait for input */
@@ -125,8 +139,8 @@ int main(int argc, char **argv) {
     fgets(command, COMMAND_SIZE, stdin);
     
     stringlist * args;
-    flag = parse_command(command,&args);
-    switch(flag) {
+
+    switch(parse_command(command,&args)) {
     case PARSE_MISSING_SPACE:
       printf("error: missing space\n");
       continue;
@@ -134,14 +148,21 @@ int main(int argc, char **argv) {
       printf("error: unmatched quote\n");
       continue;
     }
-
     
-    /* /\* Launch executable *\/ */
-    /* if (fork () == 0) { */
-
-    /* } else { */
-    /*   //wait (...); */
-    /* } */
+    pid_t child;
+    const char* path = find_path(slst_head(args));
+    if(!path) {
+      printf("error: file not found or not executable\n");
+    }
+    /* Launch executable */
+    if ((child = fork ()) == 0) {
+      execv(path, slst_to_charpp(args));
+      //char* arg[2] = {"/bin/ls",NULL};
+      //execv(NULL, arg);
+      //printf("hey execv, errno: %d\n", errno);
+    } else {
+      waitpid(child, 0, 0);
+    }
     slst_free(args);
   }
 }
