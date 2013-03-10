@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -114,8 +115,10 @@ int main(int argc, char **argv) {
   const int COMMAND_SIZE = 1024;
 
   char command[COMMAND_SIZE];
-
-  while(1) {
+  
+  int done=0;
+  
+  while(!done) {
     /* Wait for input */
     printf("%s%s", drop_until_last_slash(argv[0]), prompt);
     fgets(command, COMMAND_SIZE, stdin);
@@ -131,22 +134,24 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    if(strcmp(slst_head(args),"exit")==0 ) break;
-    
-    pid_t child;
-    const char* path = find_path(slst_head(args));
-    if(!path) {
-      printf("error: file not found or not executable\n");
-    }
-    /* Launch executable */
-    char ** child_argv = slst_to_charpp(args);
-    if ((child = fork ()) == 0) {
-      execv(path, child_argv);
-      //char* arg[2] = {"/bin/ls",NULL};
-      //execv(NULL, arg);
-      //printf("hey execv, errno: %d\n", errno);
+    if( strcmp(slst_head(args),"exit")==0 ){
+      done=1;
     } else {
-      waitpid(child, 0, 0);
+      pid_t child;
+      const char* path = find_path(slst_head(args));
+      if(!path) {
+        printf("error: file not found or not executable\n");
+      } else {
+        /* Launch executable */
+        char ** child_argv = slst_to_charpp(args);
+        if ((child = fork ()) == 0) {
+          execv(path, child_argv);
+        } else {
+          waitpid(child, 0, 0);
+        }
+        free(child_argv);
+      }
+      free(path);
     }
     slst_free(args);
   }
