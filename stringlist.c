@@ -29,13 +29,11 @@ stringlist* slst_create(char* str){
   return slst_create_with_tail(0,str);
 }
 
-/* will not free() strings inside.*/
 void slst_free(struct stringlist* slst){
-  if(!slst) return;
-  while(slst_tail(slst)){
-    slst_pop_head(&slst);
+  if(slst!=NULL){
+    slst_free(slst->next);
+    free(slst);
   }
-  free(slst);
 }
 
 void slst_pop_head(stringlist** slst){
@@ -65,9 +63,17 @@ char** slst_to_charpp(stringlist* slst) {
   char** charpp = malloc((slst_size(slst) + 1) * sizeof(char*));
   int i = 0;
   while(slst) {
-    charpp[i++] = strdup(slst->data);
+    charpp[i++] = slst->data;
     slst = slst_tail(slst);
   }
   charpp[i] = NULL;
   return charpp;
+}
+
+void slst_free_with_data(stringlist* slst){
+  if(slst!=NULL){
+    slst_free_with_data(slst->next);
+    free(slst->data);
+    free(slst);
+  }
 }
