@@ -15,15 +15,6 @@ enum PARSE_ERROR {
   PARSE_UNMATCHED_QUOTE,
 };
 
-/* parse_word(char **command,stringlist* result){ */
-/*   skipws; */
-/*   if(*command=='"'){ */
-/*     slst_append(result,&(*command)[1]); */
-/*     skip_to_quote(); */
-/*     **command='\0'; */
-/*   } */
-  
-
 int parse_command(char *command, stringlist** result) {
   int i;
   int inside_quote = 0;
@@ -77,15 +68,6 @@ int executable_exists(const char* path) {
        || (s.st_mode & S_IXGRP && s.st_gid==getegid())
        || (s.st_mode & S_IXUSR && s.st_uid==geteuid());
   }
-
-  /* if(open(path,O_EXCL | O_C */
-  /*   printf("%d: path: %s\n", errno, path); */
-  /*   return errno == EEXIST; */
-  /* } else { */
-  /*   remove(path); */
-  /* } */
-  /* printf("doesn't exist: path: %s\n", path); */
-  /* return 0; */
 }
 
 char *drop_until_last_slash(char *path) {
