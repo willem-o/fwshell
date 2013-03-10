@@ -26,31 +26,31 @@ int parse_command(char *command, stringlist** result) {
   for(i = 0; command[i] != '\0'; i++) {
     if(command[i] == '"'){
       if(inside_quote){
-	if(!isspace(command[++i])){
-	  return PARSE_MISSING_SPACE;
-	} else {
-	  inside_quote=0;
-	  command[i]='\0';
-	}
+        if( !( isspace(command[i+1]) || command[i+1]=='\0') ){
+          return PARSE_MISSING_SPACE;
+        } else {
+          inside_quote=0;
+          command[i]='\0';
+        }
       } else {
-	if(inside_word){
-	  return PARSE_MISSING_SPACE;
-	} else {
-	  inside_quote=1;
-	  slst_append(back,&command[i+1]);
-	  back=slst_tail(back);
-	} 
+        if(inside_word){
+          return PARSE_MISSING_SPACE;
+        } else {
+          inside_quote=1;
+          slst_append(back,&command[i+1]);
+          back=slst_tail(back);
+        } 
       }
     } else if(isspace(command[i]) ) {
       if(inside_word){
-	command[i]='\0';
-	inside_word=0;
+        command[i]='\0';
+        inside_word=0;
       }
     } else {
-      if(!inside_word){
-	inside_word=1;
-	slst_append(back,&command[i]);
-	back=slst_tail(back);
+      if( (!inside_word) && (!inside_quote) ){
+        inside_word=1;
+        slst_append(back,&command[i]);
+        back=slst_tail(back);
       }
     } 
   }
