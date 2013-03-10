@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 
   while(de = readdir(d)) {
     if(de->d_type == DT_DIR) {
-      printf("%s%s\n", "/", de->d_name);
+      printf("%s%s\n", de->d_name, "/");
     } else printf("%s\n", de->d_name);
   }
 
