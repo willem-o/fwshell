@@ -35,7 +35,7 @@ int parse_command(char *command, stringlist** result) {
   for(i = 0; command[i] != '\0'; i++) {
     if(command[i] == '"'){
       if(inside_quote){
-	if(isspace(command[++i])){
+	if(!isspace(command[++i])){
 	  return PARSE_MISSING_SPACE;
 	} else {
 	  inside_quote=0;
@@ -58,7 +58,7 @@ int parse_command(char *command, stringlist** result) {
     } else {
       if(!inside_word){
 	inside_word=1;
-	slst_append(back,command);
+	slst_append(back,&command[i]);
 	back=slst_tail(back);
       }
     } 
@@ -148,6 +148,8 @@ int main(int argc, char **argv) {
       printf("error: unmatched quote\n");
       continue;
     }
+
+    if(strcmp(slst_head(args),"exit")==0 ) break;
     
     pid_t child;
     const char* path = find_path(slst_head(args));
@@ -155,8 +157,9 @@ int main(int argc, char **argv) {
       printf("error: file not found or not executable\n");
     }
     /* Launch executable */
+    char ** child_argv = slst_to_charpp(args);
     if ((child = fork ()) == 0) {
-      execv(path, slst_to_charpp(args));
+      execv(path, child_argv);
       //char* arg[2] = {"/bin/ls",NULL};
       //execv(NULL, arg);
       //printf("hey execv, errno: %d\n", errno);
@@ -165,4 +168,5 @@ int main(int argc, char **argv) {
     }
     slst_free(args);
   }
+  return 0;
 }
