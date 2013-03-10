@@ -46,7 +46,7 @@ stringlist* slst_tail(struct stringlist* slst){
   return slst->next;
 }
 
-const char* slst_head(struct stringlist* slst){
+char* slst_head(struct stringlist* slst){
   return slst->data;
 }
 
